@@ -13,7 +13,13 @@ def attemptLogin(clientSocket):
             print("Welcome to TOOM!")
             break
         elif receivedMessage == "fail":
-            print("invalid password")
+            print("Invalid password. Please try again")
+            attemptLogin(clientSocket)
+        elif receivedMessage == "timeout":
+            print("Invalid pasword. Your account has been blocked. Please try again later")
+            attemptLogin(clientSocket)
+        elif receivedMessage == "blocked":
+            print("Your account is blocked due to multiple login failures. Please try again later")
             attemptLogin(clientSocket)
 
 def authenticate(ip, port) :
