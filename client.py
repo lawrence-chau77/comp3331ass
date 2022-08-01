@@ -1,7 +1,9 @@
+from datetime import datetime
 import json
 from socket import *
 import sys
-def attemptLogin(clientSocket): 
+
+def attemptLogin(clientSocket, udp): 
     username = input("Username: ")
     password = input("Password: ")
     message = f'{{"type": "login", "username": "{username}", "password": "{password}"}}' 
@@ -11,26 +13,30 @@ def attemptLogin(clientSocket):
         receivedMessage = data.decode()
         if receivedMessage == "success":
             print("Welcome to TOOM!")
+            timeStamp = datetime.strftime("%d %B %Y %H:%M:%S")
+            loginDetails = f'{{"type": "login", "timestamp": "{timeStamp}" ,"username": "{username}", "udp": "{udp}"}}' 
+            print("Enter one of the following commands (BCM, ATU, SRB, SRM, RDM, OUT): ")
+            clientSocket.sendall(loginDetails.encode())
             break
         elif receivedMessage == "fail":
             print("Invalid password. Please try again")
-            attemptLogin(clientSocket)
+            password = input("Password: ")
+            clientSocket.sendall(message.encode())
+            continue
         elif receivedMessage == "timeout":
             print("Invalid pasword. Your account has been blocked. Please try again later")
-            attemptLogin(clientSocket)
+            break
         elif receivedMessage == "blocked":
             print("Your account is blocked due to multiple login failures. Please try again later")
-            attemptLogin(clientSocket)
+            break
 
-def authenticate(ip, port) :
+def authenticate(ip, port, udpPort) :
     serverAddress = ip 
     serverPort = port 
     clientSocket = socket(AF_INET, SOCK_STREAM)
     serverAddress = (serverAddress, serverPort)
     clientSocket.connect(serverAddress)
-    attemptLogin(clientSocket)
-    
-            
+    attemptLogin(clientSocket, udpPort)
             
 if __name__ == '__main__':
     if len(sys.argv) < 4:
@@ -38,5 +44,5 @@ if __name__ == '__main__':
         exit(1)
     ip =  (sys.argv[1])
     port = int (sys.argv[2])
-    udp_port = int (sys.argv[3])
-    authenticate(ip, port)
+    udpPort = int (sys.argv[3])
+    authenticate(ip, port, udpPort)
