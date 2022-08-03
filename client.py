@@ -50,6 +50,9 @@ if __name__ == '__main__':
         commandArgs = input("Enter one of the following commands (BCM, ATU, SRB, SRM, RDM, OUT) : ")
         command = commandArgs.split()
         if (command[0] == "BCM"):
+            if len(commandArgs) == 1:
+                print("Error. Message is required for BCM command")
+                continue
             broadcast = commandArgs[commandArgs.index(' ') + 1:]
             timeStamp = datetime.now().strftime("%d %B %Y %H:%M:%S")
             message = f'{{"type": "BCM", "timestamp": "{timeStamp}", "username": "{username}", "message": "{broadcast}"}}' 
@@ -90,4 +93,6 @@ if __name__ == '__main__':
             print("RDM")
         elif (command[0] == "OUT"):
             print("OUT")
+        else:
+            print("Error. Invalid command!")
         

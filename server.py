@@ -120,9 +120,11 @@ class ClientThread(Thread):
                         if (int(login[0]) != activeUsers[user] and (line == lastLine)):
                             message = f'{{"type": "users", "timestamp": "{login[1]}", "username": "{login[2]}", "ip": "{login[3]}", "port": "{login[4][:-1]}", "last": "true"}}'
                             self.clientSocket.send((message).encode())
+                            print(f'Return messages: {login[2]}, {login[3]}, {login[4][:-1]}, active since {login[1]}')
                         elif (int(login[0]) != activeUsers[user]):
                             message = f'{{"type": "users", "timestamp": "{login[1]}", "username": "{login[2]}", "ip": "{login[3]}", "port": "{login[4][:-1]}", "last": "false"}}'
                             self.clientSocket.send((message).encode())
+                            print(f'Return messages: {login[2]}, {login[3]}, {login[4][:-1]}, active since {login[1]}')
 
         self.clientSocket.close()
         os.remove("messagelog.txt")
