@@ -62,15 +62,26 @@ if __name__ == '__main__':
                 print(f"Broadcast message, #{messageNumber} broadcast at {timestamp}")
                 continue
         elif (command[0] == "ATU"):
-            message = f'{{"type": "ATU", "username": "{username}}}'
+            message = f'{{"type": "ATU", "username": "{username}"}}'
             clientSocket.sendall(message.encode())
             data = clientSocket.recv(1024)
             receivedMessage = json.loads(data.decode())
             if receivedMessage["type"] == "empty":
                 print("no other active user")
-            elif receivedMessage["ty[e"] == "users":
-                print(data)
-                print(receivedMessage)
+            elif receivedMessage["type"] == "atu":
+                data = clientSocket.recv(1024)
+                receivedMessage = json.loads(data.decode())
+                while(receivedMessage["type"] == "users"):
+                    timestamp = receivedMessage["timestamp"]
+                    user = receivedMessage["username"]
+                    ip = receivedMessage["ip"]
+                    port = receivedMessage["port"]
+                    print(f'{user}, {ip}, {port}, active since {timestamp}')
+                    if receivedMessage["last"] == "true":
+                        break
+                    data = clientSocket.recv(1024)
+                    receivedMessage = json.loads(data.decode())
+                    
         elif (command[0] == "SRB"):
             print("SRB")
         elif (command[0] == "SRM"):

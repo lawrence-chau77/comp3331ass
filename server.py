@@ -106,17 +106,26 @@ class ClientThread(Thread):
                     message = f'{{"type": "empty"}}'
                     self.clientSocket.send((message).encode())
                 else:
-                    message = f'{{"type": "users", }}'
-                    i = 0
-                    for line in open("credentials.txt", "r").readlines():
-                        login = line.split("; ")
-                        if login[0] != activeUsers[user]:
-                            message += f'{{"{i}": "{login[1:]}"}}'
-                            i += 1
+                    message = f'{{"type": "atu"}}'
                     self.clientSocket.send((message).encode())
+                    lines = open("userlog.txt", "r").readlines()
+                    # find the last line which isn't the user requesting ATU 
+                    for line in lines:
+                        login = line.split("; ")
+                        if (int(login[0]) != activeUsers[user]):
+                            lastLine = line
+                            
+                    for line in lines:
+                        login = line.split("; ")
+                        if (int(login[0]) != activeUsers[user] and (line == lastLine)):
+                            message = f'{{"type": "users", "timestamp": "{login[1]}", "username": "{login[2]}", "ip": "{login[3]}", "port": "{login[4][:-1]}", "last": "true"}}'
+                            self.clientSocket.send((message).encode())
+                        elif (int(login[0]) != activeUsers[user]):
+                            message = f'{{"type": "users", "timestamp": "{login[1]}", "username": "{login[2]}", "ip": "{login[3]}", "port": "{login[4][:-1]}", "last": "false"}}'
+                            self.clientSocket.send((message).encode())
 
         self.clientSocket.close()
-        os.remove("credentials.txt")
+        os.remove("messagelog.txt")
         os.remove("userlog.txt")
         
 
