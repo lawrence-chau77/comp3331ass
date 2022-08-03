@@ -1,4 +1,5 @@
 from datetime import datetime
+from http import client
 import json
 from socket import *
 import sys
@@ -61,7 +62,15 @@ if __name__ == '__main__':
                 print(f"Broadcast message, #{messageNumber} broadcast at {timestamp}")
                 continue
         elif (command[0] == "ATU"):
-            print("ATU")
+            message = f'{{"type": "ATU", "username": "{username}}}'
+            clientSocket.sendall(message.encode())
+            data = clientSocket.recv(1024)
+            receivedMessage = json.loads(data.decode())
+            if receivedMessage["type"] == "empty":
+                print("no other active user")
+            elif receivedMessage["ty[e"] == "users":
+                print(data)
+                print(receivedMessage)
         elif (command[0] == "SRB"):
             print("SRB")
         elif (command[0] == "SRM"):

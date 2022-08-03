@@ -78,8 +78,8 @@ class ClientThread(Thread):
                 user = receivedMessage["username"]
                 addr = self.clientAddress
                 udp = receivedMessage["udp"]
-                activeUsers[sequenceNumber] = user
-                    #append
+                activeUsers[user] = sequenceNumber
+                #append
                 f = open("userlog.txt", "a")
                 f.write(f"{sequenceNumber}; {timestamp}; {user}; {addr[0]}; {udp}")
                 f.write("\n")
@@ -99,8 +99,22 @@ class ClientThread(Thread):
                 print(f'{user} broadcasted BCM #{messageNumber} "{message}" at {timestamp}')
                 message = f'{{"type": "bcm", "messageNumber": "{messageNumber}", "timestamp": "{timestamp}"}}' 
                 self.clientSocket.send((message).encode())
-        
-        
+
+            elif (receivedMessage['type'] == "ATU"):
+                user = receivedMessage["username"]
+                if len(activeUsers) == 1:
+                    message = f'{{"type": "empty"}}'
+                    self.clientSocket.send((message).encode())
+                else:
+                    message = f'{{"type": "users", }}'
+                    i = 0
+                    for line in open("credentials.txt", "r").readlines():
+                        login = line.split("; ")
+                        if login[0] != activeUsers[user]:
+                            message += f'{{"{i}": "{login[1:]}"}}'
+                            i += 1
+                    self.clientSocket.send((message).encode())
+
         self.clientSocket.close()
         os.remove("credentials.txt")
         os.remove("userlog.txt")
