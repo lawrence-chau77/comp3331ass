@@ -1,4 +1,5 @@
 from datetime import datetime
+import time
 import json
 from socket import *
 from sqlite3 import connect
@@ -60,7 +61,6 @@ class ClientThread(Thread):
             if not data:
                 break
             receivedMessage = json.loads(data.decode()) 
-            print(receivedMessage)
             if (receivedMessage['type'] == "login"):
                 user = receivedMessage['username']
                 pw = receivedMessage['password']
@@ -188,8 +188,11 @@ class ClientThread(Thread):
                 message = f'{{"type": "out", "username": "{receivedMessage["username"]}"}}'
                 self.clientSocket.send((message).encode())
                 print(f'{receivedMessage["username"]} logout')
+                self.clientAlive = False
+                break
             
             elif (receivedMessage['type'] == "SRB"):
+                user = receivedMessage["username"]
                 usernames = receivedMessage["users"]
                 chatMembers = usernames.split(" ")
                 # check all usernames exist from credentials
@@ -246,6 +249,7 @@ class ClientThread(Thread):
                 # send confirmation
                 message = f'{{"type": "srb", "id": "{roomId}", "users": "{usernames}"}}'
                 self.clientSocket.send((message).encode())
+                print(f'Separate chat room has been created, room ID: {roomId}, users in this room: {usernames} {user}')
             
             elif (receivedMessage['type'] == "SRM"):
                 user = receivedMessage["username"]
@@ -254,8 +258,6 @@ class ClientThread(Thread):
                 exists = False
                 userMember = False
                 for room, members in seperateRooms.items():
-                    print(members)
-                    print(user)
                     if roomId == room:
                         exists = True
                         if user in members:
@@ -282,8 +284,50 @@ class ClientThread(Thread):
                 # send confirmation 
                 message = f'{{"type": "srm", "messageNumber": "{messageNumber}", "timestamp": "{timestamp}", "username": "{user}"}}'
                 self.clientSocket.send((message).encode())
+                print(f'{user} sent separate room message #{messageNumber} at {timestamp}')
+            
+            elif (receivedMessage['type'] == "RDM"):    
+                user = receivedMessage["username"]
+                messageType = receivedMessage["messageType"]
+                timestampStr = receivedMessage["timestamp"]
+                # convert string into datetime 
+                timestamp = datetime.strptime(timestampStr, "%d %B %Y %H:%M:%S")
+                returnMessages = ""
+                # for broadcast messages
+                if messageType == "b":
+                    lines = open("messagelog.txt", "r").readlines()
+                    for line in lines:
+                        messageTime = line.split("; ")[1]
+                        messageTimestamp = datetime.strptime(messageTime, "%d %B %Y %H:%M:%S")
+                        if messageTimestamp > timestamp:
+                            returnMessages += line[:-1]
+                            returnMessages += "  "
+                        
+                # for separate room messages
+                elif messageType == "s":
+                    # check each room for user 
+                    for k,v in seperateRooms.items():
+                         # if room contains user add messages that are later to messages list
+                        if user in v:
+                            lines = open(f"SR_{k}_messagelog.txt", "r").readlines()
+                            for line in lines:
+                                messageTime = line.split("; ")[1]
+                                messageTimestamp = datetime.strptime(messageTime, "%d %B %Y %H:%M:%S")
+                                if messageTimestamp > timestamp:
+                                    returnMessages += f"room-{k}: "
+                                    returnMessages += line[:-1]
+                                    returnMessages += "  "  
+        
+                # if no new messages
+                if len(returnMessages) == 0:
+                    message = f'{{"type": "empty"}}'
+                else:
+                    message = f'{{"type": "rdm", "messages": "{returnMessages}"}}'
+                self.clientSocket.send((message).encode())
+                print(f'Return message')
+                print(returnMessages)
                 
-        self.clientSocket.close()
+        
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:

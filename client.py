@@ -71,7 +71,6 @@ if __name__ == '__main__':
             clientSocket.sendall(message.encode())
             data = clientSocket.recv(1024)
             receivedMessage = json.loads(data.decode())
-            print(receivedMessage)
             if receivedMessage["type"] == "empty":
                 print("no other active user")
             elif receivedMessage["type"] == "atu":
@@ -115,11 +114,12 @@ if __name__ == '__main__':
                 continue
             # successfully created
             elif (receivedMessage["type"] == "srb"):
-                print(f'Separate chat room has been created, room ID: {receivedMessage["id"]}, users in this room: {receivedMessage["users"]}')
+                print(f'Separate chat room has been created, room ID: {receivedMessage["id"]}, users in this room: {receivedMessage["users"]} {username}')
                 
         elif (command[0] == "SRM"):
             if len(command) == 1:
                 print("roomID and message is required for SRM command")
+                continue
             roomId = command[1]
             broadcast = ' '.join(command[2:])
             timeStamp = datetime.now().strftime("%d %B %Y %H:%M:%S")
@@ -138,7 +138,27 @@ if __name__ == '__main__':
                 print(f'{receivedMessage["username"]} sent separate room message #{receivedMessage["messageNumber"]} at {receivedMessage["timestamp"]}')
             
         elif (command[0] == "RDM"):
-            print("RDM")
+            if len(command) == 1:
+                print("message type and timestamp needed for RDM command")
+                continue
+            messageType = command[1]
+            if (messageType != "s" and messageType != "b"):
+                print("message type must be either s or b")
+                continue
+            timestamp = ' '.join(command[2:])
+            message = f'{{"type": "RDM", "messageType": "{messageType}", "username": "{username}", "timestamp": "{timestamp}"}}'
+            clientSocket.sendall(message.encode())
+            data = clientSocket.recv(1024)
+            receivedMessage = json.loads(data.decode())
+            if (receivedMessage["type"] == "empty"):
+                print("no new message")
+            elif (receivedMessage["type"] == "rdm"):
+                print(receivedMessage["messages"])
+            
+                
+                    
+                    
+                
         elif (command[0] == "OUT"):
             message = f'{{"type": "OUT", "username": "{username}"}}'
             clientSocket.sendall((message).encode())
