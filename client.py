@@ -2,8 +2,42 @@ from datetime import datetime
 from http import client
 import json
 from socket import *
+from socketserver import UDPServer
+from threading import Thread
 import sys
 
+# UDP sender thread
+def sendThread(host, port, filename):
+    clientSocket = socket(AF_INET, SOCK_DGRAM)
+    address = (host, port)
+    clientSocket.sendto(filename, address)
+    f = open(filename, "rb")
+    file = f.read(2048)
+    while (data):
+        if (clientSocket.sendto(file, address)):
+            file = f.read(2048)
+    clientSocket.close()
+    f.close()
+    
+# UDP server thread
+def receiveThread(host, port, serverSocket):
+    address = (host, port)
+    while True:
+        file, address = serverSocket.recvfrom(2048)
+        filename = file.strip()
+        f = open(filename.strip(), 'wb')
+        file, address = serverSocket.recvfrom(2048)
+        try:
+            while(file):
+                f.write(file)
+                serverSocket.settimeout(3)
+                file, address = serverSocket.recvfrom(2048)
+        except timeout:
+            f.close()
+            serverSocket.close()
+            print("A file has been received from ")
+        
+        
 # attemps to authenticate the user
 def attemptLogin(username, password, clientSocket, udp): 
     message = f'{{"type": "login", "username": "{username}", "password": "{password}"}}' 
@@ -33,7 +67,7 @@ def attemptLogin(username, password, clientSocket, udp):
         elif receivedMessage['type'] == "blocked":
             print("Your account is blocked due to multiple login failures. Please try again later")
             quit()
-            
+                    
 if __name__ == '__main__':
     if len(sys.argv) < 4:
         print('required server ip, server port and udp port')
@@ -41,14 +75,20 @@ if __name__ == '__main__':
     serverAddress =  (sys.argv[1])
     serverPort = int (sys.argv[2])
     udpPort = int (sys.argv[3])
+    # set up TCP connection
     clientSocket = socket(AF_INET, SOCK_STREAM)
     serverAddress = (serverAddress, serverPort)
     clientSocket.connect(serverAddress)
+    # set up UDP thread
+    serverSocket = socket(AF_INET, SOCK_DGRAM)
+    serverSocket.bind(("localhost", udpPort))
+    udpServer = Thread(target = receiveThread, args= ("localhost", udpPort, serverSocket, ))
+    udpServer.start()
     username = input("Username: ")
     password = input("Password: ")
     attemptLogin(username, password, clientSocket, udpPort)
     while True:
-        commandArgs = input("Enter one of the following commands (BCM, ATU, SRB, SRM, RDM, OUT) : ")
+        commandArgs = input("Enter one of the following commands (BCM, ATU, SRB, SRM, RDM, OUT, UPD) : ")
         command = commandArgs.split()
         if (command[0] == "BCM"):
             if len(command) == 1:
@@ -153,11 +193,7 @@ if __name__ == '__main__':
             if (receivedMessage["type"] == "empty"):
                 print("no new message")
             elif (receivedMessage["type"] == "rdm"):
-                print(receivedMessage["messages"])
-            
-                
-                    
-                    
+                print(receivedMessage["messages"])        
                 
         elif (command[0] == "OUT"):
             message = f'{{"type": "OUT", "username": "{username}"}}'
@@ -167,6 +203,46 @@ if __name__ == '__main__':
             if receivedMessage["type"] == "out":
                 print(f'Bye, {receivedMessage["username"]}')
             break
+        
+        elif (command[0] == "UPD"):
+            if len(command) == 1:
+                print("username and filename needed for UPD command")
+                continue
+            user = username
+            username = command[1]
+            filename = command[2]
+            # run ATU
+            message = f'{{"type": "ATU", "username": "{user}"}}'
+            clientSocket.sendall(message.encode())
+            data = clientSocket.recv(1024)
+            receivedMessage = json.loads(data.decode())
+            if receivedMessage["type"] == "empty":
+                print(f'{username} is offline')
+                continue
+            # check if online 
+            elif receivedMessage["type"] == "atu":
+                data = clientSocket.recv(1024)
+                receivedMessage = json.loads(data.decode())
+                activeUser = False
+                while(receivedMessage["type"] == "users"):
+                    user = receivedMessage["username"]
+                    if user == username:
+                        activeUser = True
+                        ip = receivedMessage["ip"]
+                        port = receivedMessage["port"]
+                    if receivedMessage["last"] == "true":
+                        break
+                    data = clientSocket.recv(1024)
+                    receivedMessage = json.loads(data.decode())
+                # if not return username is inactive 
+                if not activeUser:
+                    print(f'{username} is offline')
+                    continue
+            # create new thread
+            udpClient = Thread(target = sendThread, args = (ip, port, filename, ))
+            udpClient.start()
+             
+            
         else:
             print("Error. Invalid command!")
         
