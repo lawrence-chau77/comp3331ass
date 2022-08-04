@@ -270,7 +270,19 @@ class ClientThread(Thread):
                     self.clientSocket.send((message).encode())
                     continue
                 # append to corresponding message log file
+                f = open(f"SR_{roomId}_messagelog.txt", "r")
+                messageNumber = len(f.readlines()) + 1
+                f.close()
+                timestamp = receivedMessage["timestamp"]
+                message = receivedMessage["message"]
+                f = open(f"SR_{roomId}_messagelog.txt", "a")
+                f.write(f"{messageNumber}; {timestamp}; {user}; {message}")
+                f.write("\n")
+                f.close()
                 # send confirmation 
+                message = f'{{"type": "srm", "messageNumber": "{messageNumber}", "timestamp": "{timestamp}", "username": "{user}"}}'
+                self.clientSocket.send((message).encode())
+                
         self.clientSocket.close()
 
 if __name__ == '__main__':

@@ -122,7 +122,8 @@ if __name__ == '__main__':
                 print("roomID and message is required for SRM command")
             roomId = command[1]
             broadcast = ' '.join(command[2:])
-            message = f'{{"type": "SRM", "id": "{roomId}", "username": "{username}", "message": "{broadcast}"}}'
+            timeStamp = datetime.now().strftime("%d %B %Y %H:%M:%S")
+            message = f'{{"type": "SRM", "id": "{roomId}", "username": "{username}", "message": "{broadcast}", "timestamp": "{timeStamp}"}}'
             clientSocket.sendall(message.encode())
             data = clientSocket.recv(1024)
             receivedMessage = json.loads(data.decode())
@@ -133,6 +134,8 @@ if __name__ == '__main__':
             elif (receivedMessage["type"] == "invalidMember"):
                 print("You are not in this separate room chat")
                 continue
+            elif (receivedMessage["type"] == "srm"):
+                print(f'{receivedMessage["username"]} sent separate room message #{receivedMessage["messageNumber"]} at {receivedMessage["timestamp"]}')
             
         elif (command[0] == "RDM"):
             print("RDM")
