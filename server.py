@@ -117,6 +117,7 @@ class ClientThread(Thread):
                             
                     for line in lines:
                         login = line.split("; ")
+                        # if last line send last to let client know to stop receiving
                         if (int(login[0]) != activeUsers[user] and (line == lastLine)):
                             message = f'{{"type": "users", "timestamp": "{login[1]}", "username": "{login[2]}", "ip": "{login[3]}", "port": "{login[4][:-1]}", "last": "true"}}'
                             self.clientSocket.send((message).encode())
@@ -126,10 +127,34 @@ class ClientThread(Thread):
                             self.clientSocket.send((message).encode())
                             print(f'Return messages: {login[2]}, {login[3]}, {login[4][:-1]}, active since {login[1]}')
 
+            elif (receivedMessage['type'] == "OUT"):
+                #remove user from active users
+                user = receivedMessage["username"]
+                remove = activeUsers.pop(user)
+                #every sequence number higher than number remove 1 
+                for k, v in activeUsers.items():
+                    if v > remove:
+                        activeUsers[k] = (v-1)
+                        
+                # remove line with user
+                with open("userlog.txt", "r") as f:
+                    lines = f.readlines()
+                with open("userlog.txt", "w") as f:
+                    for line in lines:
+                        if receivedMessage["username"] not in line:
+                            words = line.split("; ")
+                            # if seq# higher than user decrement by 1
+                            if int(words[0]) > remove:
+                                replace = str(int(words[0]) - 1)
+                                words[0] = replace
+                                line = "; ".join(words)
+                            f.write(line)
+                                
+                message = f'{{"type": "out", "username": "{receivedMessage["username"]}"}}'
+                self.clientSocket.send((message).encode())
+                print(f'{receivedMessage["username"]} logout')
+                
         self.clientSocket.close()
-        os.remove("messagelog.txt")
-        os.remove("userlog.txt")
-        
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:

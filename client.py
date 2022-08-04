@@ -50,7 +50,7 @@ if __name__ == '__main__':
         commandArgs = input("Enter one of the following commands (BCM, ATU, SRB, SRM, RDM, OUT) : ")
         command = commandArgs.split()
         if (command[0] == "BCM"):
-            if len(commandArgs) == 1:
+            if len(command) == 1:
                 print("Error. Message is required for BCM command")
                 continue
             broadcast = commandArgs[commandArgs.index(' ') + 1:]
@@ -92,7 +92,13 @@ if __name__ == '__main__':
         elif (command[0] == "RDM"):
             print("RDM")
         elif (command[0] == "OUT"):
-            print("OUT")
+            message = f'{{"type": "OUT", "username": "{username}"}}'
+            clientSocket.sendall((message).encode())
+            data = clientSocket.recv(1024)
+            receivedMessage = json.loads(data.decode())
+            if receivedMessage["type"] == "out":
+                print(f'Bye, {receivedMessage["username"]}')
+            break
         else:
             print("Error. Invalid command!")
         
