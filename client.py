@@ -11,7 +11,6 @@ def attemptLogin(username, password, clientSocket, udp):
     while True:
         data = clientSocket.recv(1024)
         receivedMessage = json.loads(data.decode()) 
-        print(receivedMessage)
         # if successful send details and break 
         if receivedMessage['type'] == "success":
             print("Welcome to TOOM!")
@@ -66,11 +65,13 @@ if __name__ == '__main__':
                 timestamp = receivedMessage["timestamp"]
                 print(f"Broadcast message, #{messageNumber} broadcast at {timestamp}")
                 continue
+            
         elif (command[0] == "ATU"):
             message = f'{{"type": "ATU", "username": "{username}"}}'
             clientSocket.sendall(message.encode())
             data = clientSocket.recv(1024)
             receivedMessage = json.loads(data.decode())
+            print(receivedMessage)
             if receivedMessage["type"] == "empty":
                 print("no other active user")
             elif receivedMessage["type"] == "atu":

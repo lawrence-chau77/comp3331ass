@@ -77,13 +77,17 @@ class ClientThread(Thread):
                         continue
                 # check if password and username are correct
                 # if correct send success message otherwise add user to failed attempts
+                success = False
                 if (user not in blockedUsers):
                     for line in open("credentials.txt", "r").readlines():
                         login = line.split()
                         if user == login[0] and pw == login[1]:
                             message = f'{{"type": "success"}}' 
                             self.clientSocket.send((message).encode())
-                            continue
+                            success = True
+                            break
+                if (success):
+                    continue
                 # if failed before add fail attempt)
                 if user in loginAttempts: 
                     loginAttempts[user] += 1
@@ -95,7 +99,7 @@ class ClientThread(Thread):
                         continue
                     else:
                         message = f'{{"type": "fail"}}' 
-                    self.clientSocket.send((message).encode())
+                        self.clientSocket.send((message).encode())
                 # add user has failed an attempt 
                 else:
                     loginAttempts[user] = 1
